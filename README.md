@@ -43,7 +43,7 @@ Prior to raising a PR use the following script to run Unit tests with coverage a
 
 #### Acceptance Tests
 
-**NOTE:** Cucumber/acceptance tests are available in a separate project at:
+**NOTE:** Acceptance tests are available in a separate project at:
 [https://github.com/hmrc/ras-acceptance-tests](https://github.com/hmrc/ras-acceptance-tests)
 
 #### Performance Tests

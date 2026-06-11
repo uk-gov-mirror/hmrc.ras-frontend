@@ -20,7 +20,7 @@ import org.jsoup.Jsoup
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.i18n.Messages
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import utils.RasTestHelper
 
 class GlobalErrorViewSpec extends AnyWordSpec with RasTestHelper {

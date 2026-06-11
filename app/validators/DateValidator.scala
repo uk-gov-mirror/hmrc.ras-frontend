@@ -83,21 +83,12 @@ trait DateValidator {
       Invalid(Seq(ValidationError("error.month.invalid", MONTH)))
     else if (!DateValidator.checkYearLength(date.year.getOrElse("0")))
       Invalid(Seq(ValidationError("error.year.invalid.format", YEAR)))
-    else {
-      try
-        if (date.isInFuture) {
-          Invalid(Seq(ValidationError("error.dob.invalid.future")))
-        } else if (!DateValidator.isAfter1900(date.year.getOrElse("0")))
-          Invalid(Seq(ValidationError("error.dob.before.1900")))
-        else
-          Valid
-      catch {
-        // $COVERAGE-OFF$Disabling highlighting by default until a workaround for https://issues.scala-lang.org/browse/SI-8596 is found
-        case _: Throwable => Valid
-        // $COVERAGE-ON$
-
-      }
-    }
+    else if (date.isInFuture)
+      Invalid(Seq(ValidationError("error.dob.invalid.future")))
+    else if (!DateValidator.isAfter1900(date.year.getOrElse("0")))
+      Invalid(Seq(ValidationError("error.dob.before.1900")))
+    else
+      Valid
   }
 
   def checkDayRange(date: RasDate): Boolean =

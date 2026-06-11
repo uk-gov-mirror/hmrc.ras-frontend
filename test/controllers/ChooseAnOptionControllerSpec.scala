@@ -16,7 +16,7 @@
 
 package controllers
 
-import models._
+import models.*
 
 import java.time.*
 import org.mockito.ArgumentMatchers.any
@@ -24,10 +24,10 @@ import org.mockito.Mockito.when
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.mvc.Result
-import play.api.test.Helpers.{OK, contentAsString, _}
+import play.api.test.Helpers.{OK, contentAsString, *}
 import play.api.test.{FakeRequest, Helpers}
 import services.TaxYearResolver
-import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.RasTestHelper
 
@@ -84,7 +84,7 @@ class ChooseAnOptionControllerSpec extends AnyWordSpec with RasTestHelper {
   }
 
   "getHelpDate" must {
-    import models.FileUploadStatus._
+    import models.FileUploadStatus.*
     val testTimeStamp                   = LocalDateTime.of(2013, 4, 5, 0, 0, 0, 0).atZone(ZoneId.of("Europe/London"))
     val currentTime                     = LocalDateTime.of(2014, 4, 6, 0, 0, 0, 0).atZone(ZoneId.of("Europe/London"))
     val timestampInMillis: Option[Long] = Some(testTimeStamp.toInstant.toEpochMilli)
@@ -293,6 +293,124 @@ class ChooseAnOptionControllerSpec extends AnyWordSpec with RasTestHelper {
           date.toInstant(ZoneOffset.UTC).toEpochMilli
         ) == "10:30am on Monday 23 March 2020"
       )
+    }
+  }
+
+  "getResultsFile when the file connector fails" must {
+    "redirect to global error page" in {
+      val resultsFileMetadata = ResultsFileMetaData("", Some("testFile.csv"), Some(mockUploadTimeStamp), 1, 1L)
+      val sessionWithResults  =
+        FileSession(Some(CallbackData("", None, "", None, None)), Some(resultsFileMetadata), "1234", None, None)
+
+      when(mockFilesSessionService.fetchFileSession(any())(any(), any()))
+        .thenReturn(Future.successful(Some(sessionWithResults)))
+      when(mockResidencyStatusAPIConnector.getFile(any(), any())(any(), any()))
+        .thenReturn(Future.failed(new RuntimeException("download failed")))
+
+      val result = TestChooseAnOptionController
+        .getResultsFile("testFile.csv")
+        .apply(FakeRequest(Helpers.GET, "/chooseAnOption/results/:testFile.csv"))
+
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("/global-error")
+    }
+
+    "Failure when the streamed download terminates with an exception" in {
+      val resultsFileMetadata = ResultsFileMetaData("", Some("testFile.csv"), Some(mockUploadTimeStamp), 1, 1L)
+      val sessionWithResults  =
+        FileSession(Some(CallbackData("", None, "", None, None)), Some(resultsFileMetadata), "1234", None, None)
+      val failingStream       = new java.io.InputStream {
+        override def read(): Int = throw new java.io.IOException("read failed")
+      }
+
+      when(mockFilesSessionService.fetchFileSession(any())(any(), any()))
+        .thenReturn(Future.successful(Some(sessionWithResults)))
+      when(mockResidencyStatusAPIConnector.getFile(any(), any())(any(), any()))
+        .thenReturn(Future.successful(Some(failingStream)))
+
+      val result = TestChooseAnOptionController
+        .getResultsFile("testFile.csv")
+        .apply(FakeRequest(Helpers.GET, "/chooseAnOption/results/:testFile.csv"))
+      // Consume the response body so the stream is materialized and watchTermination's Failure branch executes
+      scala.util.Try(contentAsString(result))
+      status(result) shouldBe OK
+    }
+  }
+
+  "getHelpDate with today's upload" must {
+    "return the upload date message with 'today' prefix when the upload timestamp falls on today" in {
+      import models.FileUploadStatus.InProgress
+      val nowMillis        = Instant.now().toEpochMilli
+      val fileSessionToday = FileSession(
+        Some(CallbackData("", None, "", None, None)),
+        None,
+        "1234",
+        Some(nowMillis),
+        None
+      )
+      val result           = TestChooseAnOptionController.getHelpDate(InProgress, Some(fileSessionToday))
+      result.get should startWith("today at ")
+    }
+  }
+
+  "renderUploadResultsPage when no file session" must {
+    "redirect to no-results-available page" in {
+      when(mockFilesSessionService.fetchFileSession(any())(any(), any())).thenReturn(Future.successful(None))
+      val result = TestChooseAnOptionController.renderUploadResultsPage(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("/no-results-available")
+    }
+  }
+
+  "renderNoResultsAvailableYetPage when results file is None but file session exists" must {
+    "return OK with the results-not-available-yet view" in {
+      val fileSessionNoResults = fileSession.copy(resultsFile = None)
+      when(mockFilesSessionService.fetchFileSession(any())(any(), any()))
+        .thenReturn(Future.successful(Some(fileSessionNoResults)))
+      val result               = TestChooseAnOptionController.renderNoResultsAvailableYetPage(fakeRequest)
+      status(result) shouldBe OK
+    }
+  }
+
+  "ChooseAnOptionController unauthenticated" must {
+    def stubUnauth(): Unit =
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+
+    "redirect get to GG sign-in" in {
+      stubUnauth()
+      val result = TestChooseAnOptionController.get(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect renderUploadResultsPage to GG sign-in" in {
+      stubUnauth()
+      val result = TestChooseAnOptionController.renderUploadResultsPage(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect renderNoResultAvailablePage to GG sign-in" in {
+      stubUnauth()
+      val result = TestChooseAnOptionController.renderNoResultAvailablePage(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect renderNoResultsAvailableYetPage to GG sign-in" in {
+      stubUnauth()
+      val result = TestChooseAnOptionController.renderNoResultsAvailableYetPage(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect renderFileReadyPage to GG sign-in" in {
+      stubUnauth()
+      val result = TestChooseAnOptionController.renderFileReadyPage(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect getResultsFile to GG sign-in" in {
+      stubUnauth()
+      val result = TestChooseAnOptionController.getResultsFile("testFile.csv").apply(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
     }
   }
 

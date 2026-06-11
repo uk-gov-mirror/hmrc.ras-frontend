@@ -44,7 +44,7 @@ class ChooseAnOptionController @Inject() (
   val authConnector: DefaultAuthConnector,
   val filesSessionService: FilesSessionService,
   val mcc: MessagesControllerComponents,
-  implicit val appConfig: ApplicationConfig,
+  val appConfig: ApplicationConfig,
   chooseAnOptionView: views.html.choose_an_option,
   fileReadyView: views.html.file_ready,
   uploadResultView: views.html.upload_result,
@@ -52,6 +52,7 @@ class ChooseAnOptionController @Inject() (
   noResultsAvailableView: views.html.no_results_available
 ) extends FrontendController(mcc) with PageFlowController with Logging {
 
+  given ApplicationConfig    = appConfig
   given ec: ExecutionContext = mcc.executionContext
   private val _contentType   = "application/csv"
 

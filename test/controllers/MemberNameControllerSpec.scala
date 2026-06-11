@@ -22,7 +22,6 @@ import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status
-import play.api.libs.json.{JsObject, Json}
 import play.api.test.Helpers.*
 import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
@@ -44,7 +43,7 @@ class MemberNameControllerSpec extends AnyWordSpec with RasTestHelper {
   val memberNino: MemberNino                  = MemberNino("AB123456C")
   val memberDob: MemberDateOfBirth            = MemberDateOfBirth(RasDate(Some("12"), Some("12"), Some("2012")))
   val rasSession: RasSession                  = RasSession(memberName, memberNino, memberDob, None, None)
-  val postData: JsObject                      = Json.obj("firstName" -> "Jim", "lastName" -> "McGill")
+  val postData: Seq[(String, String)]         = Seq("firstName" -> "Jim", "lastName" -> "McGill")
 
   val TestMemberNameController: MemberNameController = new MemberNameController(
     mockAuthConnector,
@@ -87,20 +86,22 @@ class MemberNameControllerSpec extends AnyWordSpec with RasTestHelper {
   "Member name controller form submission" must {
 
     "return bad request when form error present" in {
-      val postData = Json.obj("firstName" -> "", "lastName" -> "Esfandiari")
-      val result   = TestMemberNameController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val postData = Seq("firstName" -> "", "lastName" -> "Esfandiari")
+      val result   =
+        TestMemberNameController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result) should equal(BAD_REQUEST)
     }
 
     "save details to cache" in {
-      await(TestMemberNameController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData))))
+      await(TestMemberNameController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*)))
       verify(mockRasSessionCacheService, atLeastOnce).cacheName(any())(any())
     }
 
     "redirect to nino page when name cached and edit mode is false" in {
       val session = RasSession(memberName, MemberNino(""), MemberDateOfBirth(RasDate(None, None, None)), None, None)
       when(mockRasSessionCacheService.cacheName(any())(any())).thenReturn(Future.successful(Some(session)))
-      val result  = TestMemberNameController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result  =
+        TestMemberNameController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result)         shouldBe 303
       redirectLocation(result) should include("/member-national-insurance-number")
     }
@@ -112,7 +113,8 @@ class MemberNameControllerSpec extends AnyWordSpec with RasTestHelper {
         .thenReturn(Future.successful(Some(rasSession)))
       when(mockRasSessionCacheService.cacheName(any())(any())).thenReturn(Future.successful(Some(rasSession)))
 
-      val result = TestMemberNameController.post(true).apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNameController.post(true).apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
 
       status(result)           should equal(SEE_OTHER)
       redirectLocation(result) should include("/member-residency-status")
@@ -124,7 +126,8 @@ class MemberNameControllerSpec extends AnyWordSpec with RasTestHelper {
       when(mockResidencyStatusAPIConnector.getResidencyStatus(any())(any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse("Member not found", 403, 403)))
 
-      val result = TestMemberNameController.post(true).apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNameController.post(true).apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result)           should equal(SEE_OTHER)
       redirectLocation(result) should include("/no-residency-status-displayed")
 
@@ -133,7 +136,8 @@ class MemberNameControllerSpec extends AnyWordSpec with RasTestHelper {
 
     "redirect to technical error page if name is not cached" in {
       when(mockRasSessionCacheService.cacheName(any())(any())).thenReturn(Future.successful(None))
-      val result = TestMemberNameController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNameController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result)         shouldBe 303
       redirectLocation(result) should include("global-error")
     }
@@ -152,6 +156,33 @@ class MemberNameControllerSpec extends AnyWordSpec with RasTestHelper {
       val result = TestMemberNameController.back(true).apply(fakeRequest)
       status(result)         shouldBe SEE_OTHER
       redirectLocation(result) should include("/no-residency-status-displayed")
+    }
+  }
+
+  "MemberNameController unauthenticated" must {
+    "redirect get to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestMemberNameController.get()(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect post to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result =
+        TestMemberNameController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect back to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestMemberNameController.back()(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
     }
   }
 

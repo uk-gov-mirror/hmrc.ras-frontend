@@ -16,7 +16,7 @@
 
 package forms
 
-import forms.MemberNameForm._
+import forms.MemberNameForm.*
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.data.FormError
 import play.api.libs.json.Json

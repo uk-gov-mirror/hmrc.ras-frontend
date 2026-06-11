@@ -35,7 +35,6 @@ import play.api.{Application, i18n}
 import play.twirl.api.Html
 import repository.RasSessionCacheRepository
 import services.{AuditService, FilesSessionService, SessionCacheService}
-import uk.gov.hmrc.crypto.ApplicationCrypto
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.mongo.test.MongoSupport
@@ -95,7 +94,6 @@ trait RasTestHelper extends MongoSupport with MockitoSugar with WireMockSupport 
   val OTHER_UK = "otherUKResident"
 
   val mockAppConfig: ApplicationConfig = mock[ApplicationConfig]
-  val mockAppCrypto: ApplicationCrypto = mock[ApplicationCrypto]
 
   val mockAuthConnector: DefaultAuthConnector   = mock[DefaultAuthConnector]
   val mockAuditConnector: DefaultAuditConnector = mock[DefaultAuditConnector]
@@ -104,7 +102,7 @@ trait RasTestHelper extends MongoSupport with MockitoSugar with WireMockSupport 
   val mockUpscanInitiateConnector: UpscanInitiateConnector         = mock[UpscanInitiateConnector]
   val mockResidencyStatusAPIConnector: ResidencyStatusAPIConnector = mock[ResidencyStatusAPIConnector]
 
-  val applicationConfig = fakeApplication.injector.instanceOf[ApplicationConfig]
+  val applicationConfig: ApplicationConfig = fakeApplication.injector.instanceOf[ApplicationConfig]
 
   // user sessions
   val mockRasSessionCacheService: SessionCacheService          = mock[SessionCacheService]

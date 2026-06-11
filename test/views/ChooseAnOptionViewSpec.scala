@@ -16,7 +16,7 @@
 
 package views
 
-import models.FileUploadStatus._
+import models.FileUploadStatus.*
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.i18n.Messages

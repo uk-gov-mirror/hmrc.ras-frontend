@@ -16,16 +16,15 @@
 
 package controllers
 
-import models._
+import models.*
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status.OK
-import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
-import uk.gov.hmrc.auth.core._
+import play.api.test.Helpers.*
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import utils.{RandomNino, RasTestHelper}
 
@@ -33,11 +32,11 @@ import scala.concurrent.Future
 
 class MemberNinoControllerSpec extends AnyWordSpec with RasTestHelper {
 
-  val memberName: MemberName       = MemberName("Jackie", "Chan")
-  val memberNino: MemberNino       = MemberNino("AB123456C")
-  val memberDob: MemberDateOfBirth = MemberDateOfBirth(RasDate(Some("12"), Some("12"), Some("2012")))
-  val rasSession: RasSession       = RasSession(memberName, memberNino, memberDob, None, None)
-  val postData: JsObject           = Json.obj("nino" -> RandomNino.generate)
+  val memberName: MemberName          = MemberName("Jackie", "Chan")
+  val memberNino: MemberNino          = MemberNino("AB123456C")
+  val memberDob: MemberDateOfBirth    = MemberDateOfBirth(RasDate(Some("12"), Some("12"), Some("2012")))
+  val rasSession: RasSession          = RasSession(memberName, memberNino, memberDob, None, None)
+  val postData: Seq[(String, String)] = Seq("nino" -> RandomNino.generate)
 
   private val enrolmentIdentifier = EnrolmentIdentifier("PSAID", "Z123456")
 
@@ -84,27 +83,31 @@ class MemberNinoControllerSpec extends AnyWordSpec with RasTestHelper {
 
     "return bad request with session name when form error is present and session contains a name" in {
       when(mockRasSessionCacheService.fetchRasSession()(any())).thenReturn(Future.successful(Some(rasSession)))
-      val postData = Json.obj("nino" -> RandomNino.generate.substring(3))
-      val result   = TestMemberNinoController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val postData = Seq("nino" -> RandomNino.generate.substring(3))
+      val result   =
+        TestMemberNinoController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result) should equal(BAD_REQUEST)
     }
 
     "return bad request with member as name when form error is present and session contains no name" in {
       when(mockRasSessionCacheService.fetchRasSession()(any())).thenReturn(Future.successful(None))
-      val postData = Json.obj("nino" -> RandomNino.generate.substring(3))
-      val result   = TestMemberNinoController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val postData = Seq("nino" -> RandomNino.generate.substring(3))
+      val result   =
+        TestMemberNinoController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result) should equal(BAD_REQUEST)
     }
 
     "return bad request when form error present with special characters" in {
-      val postData = Json.obj("nino" -> "AB123%56C")
-      val result   = TestMemberNinoController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val postData = Seq("nino" -> "AB123%56C")
+      val result   =
+        TestMemberNinoController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result) should equal(BAD_REQUEST)
     }
 
     "redirect to dob page when nino cached and edit mode is false" in {
       when(mockRasSessionCacheService.fetchRasSession()(any())).thenReturn(Future.successful(Some(rasSession)))
-      val result = TestMemberNinoController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNinoController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result)         shouldBe SEE_OTHER
       redirectLocation(result) should include("member-date-of-birth")
     }
@@ -115,7 +118,8 @@ class MemberNinoControllerSpec extends AnyWordSpec with RasTestHelper {
       when(mockRasSessionCacheService.cacheResidencyStatusResult(any())(any()))
         .thenReturn(Future.successful(Some(rasSession)))
 
-      val result = TestMemberNinoController.post(true).apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNinoController.post(true).apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
 
       status(result)           should equal(SEE_OTHER)
       redirectLocation(result) should include("/member-residency-status")
@@ -127,7 +131,8 @@ class MemberNinoControllerSpec extends AnyWordSpec with RasTestHelper {
       when(mockResidencyStatusAPIConnector.getResidencyStatus(any())(any(), any()))
         .thenReturn(Future.failed(UpstreamErrorResponse("Member not found", 403, 403)))
 
-      val result = TestMemberNinoController.post(true).apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNinoController.post(true).apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result)           should equal(SEE_OTHER)
       redirectLocation(result) should include("/no-residency-status-displayed")
 
@@ -136,7 +141,8 @@ class MemberNinoControllerSpec extends AnyWordSpec with RasTestHelper {
 
     "redirect to technical error page if nino is not cached" in {
       when(mockRasSessionCacheService.cacheNino(any())(any())).thenReturn(Future.successful(None))
-      val result = TestMemberNinoController.post().apply(fakeRequest.withJsonBody(Json.toJson(postData)))
+      val result =
+        TestMemberNinoController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
       status(result)         shouldBe SEE_OTHER
       redirectLocation(result) should include("global-error")
     }
@@ -162,6 +168,33 @@ class MemberNinoControllerSpec extends AnyWordSpec with RasTestHelper {
     val result = TestMemberNinoController.back().apply(FakeRequest())
     status(result)         shouldBe SEE_OTHER
     redirectLocation(result) should include("global-error")
+  }
+
+  "MemberNinoController unauthenticated" must {
+    "redirect get to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestMemberNinoController.get()(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect post to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result =
+        TestMemberNinoController.post().apply(fakeRequest.withMethod("POST").withFormUrlEncodedBody(postData*))
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect back to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestMemberNinoController.back()(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
   }
 
 }

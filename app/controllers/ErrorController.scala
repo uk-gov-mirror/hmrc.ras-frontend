@@ -35,7 +35,7 @@ class ErrorController @Inject() (
   fileNotAvailableView: views.html.file_not_available,
   unauthorisedView: views.html.unauthorised,
   startAtStartView: views.html.sorry_you_need_to_start_again
-)(implicit val appConfig: ApplicationConfig)
+)(using val appConfig: ApplicationConfig)
     extends FrontendController(mcc) with RasController with Logging {
 
   given ec: ExecutionContext = mcc.executionContext

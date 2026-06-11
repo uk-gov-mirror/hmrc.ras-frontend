@@ -16,7 +16,7 @@
 
 package models
 
-import models.upscan._
+import models.upscan.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsError, JsString, JsSuccess, Json}

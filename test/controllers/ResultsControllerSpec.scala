@@ -16,7 +16,7 @@
 
 package controllers
 
-import models._
+import models.*
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.matchers.should.Matchers.*
@@ -25,9 +25,9 @@ import play.api.http.Status
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import services.TaxYearResolver
-import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.auth.core.*
 import utils.{RandomNino, RasTestHelper}
 
 import java.time.format.DateTimeFormatter
@@ -159,6 +159,42 @@ class ResultsControllerSpec extends AnyWordSpec with RasTestHelper {
       val result = TestResultsController.back.apply(FakeRequest())
       status(result)         shouldBe SEE_OTHER
       redirectLocation(result) should include("/global-error")
+    }
+
+    "redirect to choose-an-option for noMatchFound when session is incomplete" in {
+      val incompleteSession =
+        rasSession.copy(name = MemberName("", ""), residencyStatusResult = None)
+      when(mockRasSessionCacheService.fetchRasSession()(any()))
+        .thenReturn(Future.successful(Some(incompleteSession)))
+      val result            = TestResultsController.noMatchFound(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("/relief-at-source")
+    }
+  }
+
+  "ResultsController unauthenticated" must {
+    "redirect matchFound to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestResultsController.matchFound(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect noMatchFound to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestResultsController.noMatchFound(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect back to GG sign-in when user has no active session" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+      val result = TestResultsController.back(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("gg/sign-in")
     }
   }
 

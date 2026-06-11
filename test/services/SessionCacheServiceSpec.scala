@@ -16,7 +16,7 @@
 
 package services
 
-import models._
+import models.*
 import org.scalatest.OptionValues
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec

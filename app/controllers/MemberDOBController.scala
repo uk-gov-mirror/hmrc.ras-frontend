@@ -25,7 +25,7 @@ import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, MessagesR
 import services.SessionCacheService
 import uk.gov.hmrc.play.audit.DefaultAuditConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
-import uk.gov.hmrc.play.bootstrap.controller.WithUnsafeDefaultFormBinding
+import uk.gov.hmrc.play.bootstrap.controller.WithUrlEncodedOnlyFormBinding
 import uk.gov.hmrc.play.bootstrap.frontend.controller.FrontendController
 import validators.DateValidator
 
@@ -38,15 +38,16 @@ class MemberDOBController @Inject() (
   val connector: DefaultAuditConnector,
   val sessionService: SessionCacheService,
   val mcc: MessagesControllerComponents,
-  implicit val appConfig: ApplicationConfig,
+  val appConfig: ApplicationConfig,
   memberDobView: views.html.member_dob
 ) extends FrontendController(mcc)
     with RasResidencyCheckerController
     with PageFlowController
     with Logging
     with DateValidator
-    with WithUnsafeDefaultFormBinding {
+    with WithUrlEncodedOnlyFormBinding {
 
+  given ApplicationConfig    = appConfig
   given ec: ExecutionContext = mcc.executionContext
 
   val apiVersion: ApiVersion = appConfig.rasApiVersion

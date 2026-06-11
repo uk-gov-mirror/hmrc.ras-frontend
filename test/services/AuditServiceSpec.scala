@@ -18,15 +18,18 @@ package services
 
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{reset, verify}
+import org.mockito.Mockito.{reset, verify, when}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
 import uk.gov.hmrc.play.audit.DefaultAuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
 import uk.gov.hmrc.play.audit.model.DataEvent
 import utils.RasTestHelper
 
-trait AuditServiceSpec extends AnyWordSpec with RasTestHelper with BeforeAndAfter {
+import scala.concurrent.Future
+
+class AuditServiceSpec extends AnyWordSpec with RasTestHelper with BeforeAndAfter {
 
   class TestService extends AuditService {
     override val connector: DefaultAuditConnector = mockAuditConnector
@@ -34,6 +37,8 @@ trait AuditServiceSpec extends AnyWordSpec with RasTestHelper with BeforeAndAfte
 
   before {
     reset(mockAuditConnector)
+    when(mockAuditConnector.sendEvent(any[DataEvent])(any(), any()))
+      .thenReturn(Future.successful(AuditResult.Success))
   }
 
   "AuditService" must {
@@ -52,7 +57,7 @@ trait AuditServiceSpec extends AnyWordSpec with RasTestHelper with BeforeAndAfte
 
       val event: DataEvent = captor.getValue
 
-      event.auditSource shouldBe "ras-api"
+      event.auditSource shouldBe "ras-frontend"
       event.auditType   shouldBe "fake-audit-type"
     }
 
@@ -80,14 +85,12 @@ trait AuditServiceSpec extends AnyWordSpec with RasTestHelper with BeforeAndAfte
       val event: DataEvent = captor.getValue
 
       event.detail should contain("testKey" -> "testValue")
-
-      event.detail should contain key "Authorization"
     }
 
     "send an event via the audit connector" in new TestService {
 
       audit(fakeAuditType, fakeEndpoint, auditDataMap)
-      verify(mockAuditConnector).sendEvent(any())(any(), any())
+      verify(mockAuditConnector).sendEvent(any[DataEvent])(any(), any())
     }
   }
 

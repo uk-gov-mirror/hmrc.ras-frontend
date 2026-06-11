@@ -43,7 +43,7 @@ class ErrorHandlerSpec extends AnyWordSpec with RasTestHelper {
           pageTitle = "pageTitle",
           heading = "heading",
           message = "message"
-        )(fakeRequest)
+        )(using fakeRequest)
       )
 
       result.body must include("pageTitle")

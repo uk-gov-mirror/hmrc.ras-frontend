@@ -18,6 +18,7 @@ package validators
 
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import play.api.data.validation.{Invalid, Valid, ValidationError}
 import utils.RandomNino
 
 class NinoValidatorSpec extends AnyWordSpec with Matchers {
@@ -80,6 +81,60 @@ class NinoValidatorSpec extends AnyWordSpec with Matchers {
       validateNino("gy000002a") should equal(true)
     }
 
+  }
+
+  "containsNoSpecialCharacters" should {
+    "return true when the input is alphanumeric" in {
+      NinoValidator.containsNoSpecialCharacters("AB123456C") shouldBe true
+    }
+
+    "return true when whitespace is present (whitespace is stripped before regex check)" in {
+      NinoValidator.containsNoSpecialCharacters("AB 12 34 56 C") shouldBe true
+    }
+
+    "return false when special characters are present" in {
+      NinoValidator.containsNoSpecialCharacters("AB-12-34-56C") shouldBe false
+    }
+  }
+
+  "ninoConstraint" should {
+    val constraint = NinoValidator.ninoConstraint("nino")
+
+    "return Invalid with error.withName.mandatory when nino is empty" in {
+      constraint("") shouldBe Invalid(
+        Seq(ValidationError("error.withName.mandatory", "National Insurance number"))
+      )
+    }
+
+    "return Invalid with error.withName.mandatory when nino is only whitespace" in {
+      constraint("    ") shouldBe Invalid(
+        Seq(ValidationError("error.withName.mandatory", "National Insurance number"))
+      )
+    }
+
+    "return Invalid with error.nino.special.character when nino contains special characters" in {
+      constraint("AB-12-34-56C") shouldBe Invalid(Seq(ValidationError("error.nino.special.character")))
+    }
+
+    "return Invalid with error.nino.length when nino is shorter than 8 characters" in {
+      constraint("AB12345") shouldBe Invalid(Seq(ValidationError("error.nino.length")))
+    }
+
+    "return Invalid with error.nino.length when nino is longer than 9 characters" in {
+      constraint("AB12345678C") shouldBe Invalid(Seq(ValidationError("error.nino.length")))
+    }
+
+    "return Invalid with error.nino.invalid when nino has a valid shape but an invalid prefix" in {
+      constraint("BG123456C") shouldBe Invalid(Seq(ValidationError("error.nino.invalid")))
+    }
+
+    "return Valid for a well-formed nino" in {
+      constraint("KC000000A") shouldBe Valid
+    }
+
+    "return Valid for a well-formed nino with spaces" in {
+      constraint("C E0 00 00 0A") shouldBe Valid
+    }
   }
 
   def validateNino(nino: String): Boolean = NinoValidator.isValid(nino)

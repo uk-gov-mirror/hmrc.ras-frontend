@@ -23,8 +23,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status
 import play.api.mvc.Result
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
-import uk.gov.hmrc.auth.core._
+import play.api.test.Helpers.*
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.RasTestHelper
 
@@ -49,7 +49,7 @@ class ErrorControllerSpec extends AnyWordSpec with RasTestHelper {
     fileNotAvailableView,
     unauthorisedView,
     startAtStartView
-  )(mockAppConfig) {
+  )(using mockAppConfig) {
     when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any())).thenReturn(successfulRetrieval)
   }
 
@@ -75,6 +75,12 @@ class ErrorControllerSpec extends AnyWordSpec with RasTestHelper {
       status(result) shouldBe Status.INTERNAL_SERVER_ERROR
     }
 
+    "return BadRequest when startAtStart is called" in {
+      val result = TestErrorController.startAtStart(fakeRequest)
+      status(result)      shouldBe Status.BAD_REQUEST
+      contentType(result) shouldBe Some("text/html")
+    }
+
     "return HTML when global error is called" in {
       val result = TestErrorController.renderGlobalErrorPage(fakeRequest)
       contentType(result) shouldBe Some("text/html")
@@ -96,7 +102,7 @@ class ErrorControllerSpec extends AnyWordSpec with RasTestHelper {
       fileNotAvailableView,
       unauthorisedView,
       startAtStartView
-    )(mockAppConfig) {
+    )(using mockAppConfig) {
       override def isAuthorised()(implicit
         hc: HeaderCarrier,
         ec: ExecutionContext

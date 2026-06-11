@@ -16,7 +16,7 @@
 
 package connectors
 
-import models._
+import models.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status.{BAD_REQUEST, FORBIDDEN, INTERNAL_SERVER_ERROR, OK}
@@ -76,6 +76,14 @@ class ResidencyStatusAPIConnectorSpec extends AnyWordSpec with Matchers with Ras
         await(connector.getResidencyStatus(memberDetails))
       }
       result.getMessage should include("Internal Server Error")
+    }
+
+    "throw InternalServerException when API returns 200 but the body cannot be parsed as ResidencyStatus" in {
+      setupMockPost(OK, "{}", "/residency-status")
+      val result = intercept[InternalServerException] {
+        await(connector.getResidencyStatus(memberDetails))
+      }
+      result.getMessage should include("could not be parsed")
     }
   }
 

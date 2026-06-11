@@ -16,17 +16,18 @@
 
 package services
 
-import models._
+import models.*
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.PrivateMethodTester
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatestplus.play.PlaySpec
+import uk.gov.hmrc.http.HeaderCarrier
 import utils.RasTestHelper
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class FilesSessionServiceSpec extends PlaySpec with RasTestHelper with PrivateMethodTester {
 
@@ -310,6 +311,56 @@ class FilesSessionServiceSpec extends PlaySpec with RasTestHelper with PrivateMe
       val result: FileUploadStatus.Value = filesSessionService.determineFileStatus("A123456").futureValue
 
       result shouldBe FileUploadStatus.TimeExpiryError
+    }
+  }
+
+  "createFileSession recover" must {
+    "return false when the connector future fails" in {
+      when(mockFilesSessionConnector.createFileSession(any())(any(), any()))
+        .thenReturn(Future.failed(new RuntimeException("connector boom")))
+
+      val result: Boolean = filesSessionService.createFileSession("A123456", "reference-1234").futureValue
+
+      result shouldBe false
+    }
+  }
+
+  "fetchFileSession recover" must {
+    "return None when the connector future fails" in {
+      when(mockFilesSessionConnector.fetchFileSession(any())(any(), any()))
+        .thenReturn(Future.failed(new RuntimeException("connector boom")))
+
+      val result: Option[FileSession] = filesSessionService.fetchFileSession("A123456").futureValue
+
+      result shouldBe None
+    }
+  }
+
+  "removeFileSessionFromCache recover" must {
+    "return false when the connector future fails" in {
+      when(mockFilesSessionConnector.deleteFileSession(any())(any(), any()))
+        .thenReturn(Future.failed(new RuntimeException("connector boom")))
+
+      val result: Boolean = filesSessionService.removeFileSessionFromCache("A123456").futureValue
+
+      result shouldBe false
+    }
+  }
+
+  "isFileInProgress recover" must {
+    "return false when the fetched session future fails" in {
+      val failingService: FilesSessionService =
+        new FilesSessionService(mockFilesSessionConnector, mockAppConfig) {
+          override def fetchFileSession(userId: String)(implicit
+            hc: HeaderCarrier,
+            ec: ExecutionContext
+          ): Future[Option[FileSession]] =
+            Future.failed(new RuntimeException("fetch boom"))
+        }
+
+      val result: Boolean = failingService.isFileInProgress("A123456").futureValue
+
+      result shouldBe false
     }
   }
 

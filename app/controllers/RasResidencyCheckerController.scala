@@ -82,7 +82,7 @@ trait RasResidencyCheckerController extends RasController with AuditService with
               )
             auditResponse(
               failureReason = None,
-              nino = Some(memberDetails.nino),
+              nino = memberDetails.nino,
               residencyStatus = Some(rasResponse),
               userId = userId
             )
@@ -96,7 +96,7 @@ trait RasResidencyCheckerController extends RasController with AuditService with
           case UpstreamErrorResponse.WithStatusCode(FORBIDDEN) =>
             auditResponse(
               failureReason = Some("MATCHING_FAILED"),
-              nino = Some(memberDetails.nino),
+              nino = memberDetails.nino,
               residencyStatus = None,
               userId = userId
             )
@@ -106,7 +106,7 @@ trait RasResidencyCheckerController extends RasController with AuditService with
           case e: Throwable                                    =>
             auditResponse(
               failureReason = Some("INTERNAL_SERVER_ERROR"),
-              nino = Some(memberDetails.nino),
+              nino = memberDetails.nino,
               residencyStatus = None,
               userId = userId
             )
@@ -141,12 +141,12 @@ trait RasResidencyCheckerController extends RasController with AuditService with
     */
   private def auditResponse(
     failureReason: Option[String],
-    nino: Option[String],
+    nino: String,
     residencyStatus: Option[ResidencyStatus],
     userId: String
   )(implicit request: Request[AnyContent], hc: HeaderCarrier, ec: ExecutionContext): Unit = {
 
-    val ninoMap: Map[String, String]           = nino.map(nino => Map("nino" -> nino)).getOrElse(Map())
+    val ninoMap: Map[String, String]           = Map("nino" -> nino)
     val nextYearStatusMap: Map[String, String] =
       if (residencyStatus.nonEmpty)
         residencyStatus.get.nextYearForecastResidencyStatus
@@ -169,7 +169,7 @@ trait RasResidencyCheckerController extends RasController with AuditService with
     )
   }
 
-  def getFullName()(implicit ec: ExecutionContext, request: Request[_]): Future[String] =
+  def getFullName()(implicit ec: ExecutionContext, request: Request[?]): Future[String] =
     sessionService.fetchRasSession() map {
       case Some(session) => session.name.firstName.capitalize + " " + session.name.lastName.capitalize
       case _             => "member"

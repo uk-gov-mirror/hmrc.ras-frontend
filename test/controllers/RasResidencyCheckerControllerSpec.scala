@@ -18,13 +18,19 @@ package controllers
 
 import config.ApplicationConfig
 import connectors.ResidencyStatusAPIConnector
-import models._
+import models.*
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
+import play.api.test.FakeRequest
+import play.api.test.Helpers.{SEE_OTHER, defaultAwaitTimeout, status}
 import services.SessionCacheService
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.audit.DefaultAuditConnector
 import utils.RasTestHelper
+
+import scala.concurrent.Future
 
 class RasResidencyCheckerControllerSpec extends AnyWordSpec with RasTestHelper {
 
@@ -58,6 +64,21 @@ class RasResidencyCheckerControllerSpec extends AnyWordSpec with RasTestHelper {
         testRasResidencyCheckerController.extractResidencyStatus(OTHER_UK) shouldBe "England, Northern Ireland or Wales"
         testRasResidencyCheckerController.extractResidencyStatus("")       shouldBe ""
       }
+    }
+  }
+
+  "RasResidencyCheckerController submitResidencyStatus" must {
+    "redirect to startAtStart when the session has no name, nino or dob" in {
+      val controller = configureRasResidencyCheckerController(ApiV2_0)
+
+      when(mockRasSessionCacheService.resetRasSession()(any()))
+        .thenReturn(Future.successful(Some(RasSession.cleanSession)))
+
+      given request: FakeRequest[play.api.mvc.AnyContentAsEmpty.type] = FakeRequest()
+
+      val result = controller.submitResidencyStatus(RasSession.cleanSession, "user-1")
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("service-start-at-start")
     }
   }
 

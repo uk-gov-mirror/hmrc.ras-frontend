@@ -16,7 +16,7 @@
 
 package controllers
 
-import models._
+import models.*
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.scalatest.matchers.should.Matchers.*
@@ -24,7 +24,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import play.api.http.Status.OK
 import play.api.test.FakeRequest
 import play.api.test.Helpers.{defaultAwaitTimeout, status}
-import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments}
+import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments, SessionRecordNotFound}
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.{RandomNino, RasTestHelper}
 
@@ -175,6 +175,13 @@ class SessionControllerSpec extends AnyWordSpec with RasTestHelper {
         val result = TestSessionController.keepAlive()(FakeRequest())
         status(result) shouldBe OK
       }
+    }
+
+    "redirect to GG sign-in when user is unauthenticated" in {
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session found")))
+      val result = TestSessionController.redirect("choose-an-option", cleanSession = false)(FakeRequest())
+      redirectLocation(result) should include("gg/sign-in")
     }
   }
 

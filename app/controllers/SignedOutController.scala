@@ -28,10 +28,11 @@ import scala.concurrent.{ExecutionContext, Future}
 class SignedOutController @Inject() (
   val authConnector: DefaultAuthConnector,
   val mcc: MessagesControllerComponents,
-  implicit val appConfig: ApplicationConfig,
+  val appConfig: ApplicationConfig,
   signedOutView: views.html.signed_out
 ) extends FrontendController(mcc) with RasController with Logging {
 
+  given ApplicationConfig    = appConfig
   given ec: ExecutionContext = mcc.executionContext
 
   def signedOut: Action[AnyContent] = Action.async { request =>

@@ -26,16 +26,19 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ErrorHandler @Inject() (
   val messagesApi: MessagesApi,
-  implicit val appConfig: ApplicationConfig,
-  implicit val ec: ExecutionContext,
+  val appConfig: ApplicationConfig,
+  val ec: ExecutionContext,
   errorPageView: views.html.error,
   pageNotFoundView: views.html.global_page_not_found
 ) extends FrontendErrorHandler with I18nSupport {
 
+  given ApplicationConfig = appConfig
+  given ExecutionContext  = ec
+
   override def notFoundTemplate(implicit request: play.api.mvc.RequestHeader): Future[Html] =
     Future.successful(pageNotFoundView())
 
-  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(implicit
+  override def standardErrorTemplate(pageTitle: String, heading: String, message: String)(using
     request: RequestHeader
   ): Future[Html] =
     Future.successful(errorPageView(pageTitle, heading, message))

@@ -37,12 +37,13 @@ class UpscanController @Inject() (
   val filesSessionService: FilesSessionService,
   val sessionService: SessionCacheService,
   val mcc: MessagesControllerComponents,
-  implicit val appConfig: ApplicationConfig,
+  val appConfig: ApplicationConfig,
   fileUploadView: views.html.file_upload,
   fileUploadSuccessView: views.html.file_upload_successful,
   cannotUploadAnotherView: views.html.cannot_upload_another_file
 ) extends FrontendController(mcc) with RasController with PageFlowController with Logging {
 
+  given ApplicationConfig    = appConfig
   given ec: ExecutionContext = mcc.executionContext
 
   def get: Action[AnyContent] = Action.async { request =>
@@ -125,7 +126,7 @@ class UpscanController @Inject() (
         Future.successful(Redirect(routes.ErrorController.renderGlobalErrorPage))
     }
 
-  def createFileUploadUrl(userId: String)(implicit hc: HeaderCarrier, request: Request[_]) = {
+  private def createFileUploadUrl(userId: String)(implicit hc: HeaderCarrier, request: Request[?]) = {
     def urlToString(c: Call): String = appConfig.uploadRedirectTargetBase + c.url
 
     val successRedirectUrl = controllers.routes.UpscanController.uploadSuccess

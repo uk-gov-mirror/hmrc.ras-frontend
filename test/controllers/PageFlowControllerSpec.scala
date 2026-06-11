@@ -17,10 +17,10 @@
 package controllers
 
 import config.ApplicationConfig
-import models._
+import models.*
 import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
-import play.api.test.Helpers._
+import play.api.test.Helpers.*
 import uk.gov.hmrc.auth.core.AuthConnector
 import utils.RasTestHelper
 

@@ -16,7 +16,7 @@
 
 package controllers
 
-import models._
+import models.*
 import models.upscan.{UpscanFileReference, UpscanInitiateResponse}
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
@@ -28,7 +28,7 @@ import play.api.http.Status.OK
 import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers.*
-import uk.gov.hmrc.auth.core._
+import uk.gov.hmrc.auth.core.*
 import uk.gov.hmrc.http.HeaderCarrier
 import utils.RasTestHelper
 
@@ -235,6 +235,18 @@ class UpscanControllerSpec extends AnyWordSpec with RasTestHelper {
       doc(result).getElementById("upload-error").text shouldBe "file.large.error"
     }
 
+    "contain file empty error if EntityTooSmall is present in session cache" in {
+      val uploadResponse = UploadResponse("EntityTooSmall", Some(""))
+      val rasSession     =
+        RasSession(memberName, memberNino, memberDob, None, Some(uploadResponse), Some(File("existingReference123")))
+      when(mockRasSessionCacheService.fetchRasSession()(any())).thenReturn(Future.successful(Some(rasSession)))
+      when(mockFilesSessionService.isFileInProgress(any())(any(), any())).thenReturn(Future.successful(false))
+      when(mockUpscanInitiateConnector.initiateUpscan(any, any, any)(any)).thenReturn(Future.successful(upscanResponse))
+      when(mockRasSessionCacheService.cacheFile(any())(any())).thenReturn(Future.successful(Some(rasSession)))
+      val result         = TestUpscanController.get.apply(fakeRequest)
+      doc(result).getElementById("upload-error").text shouldBe "file.empty.error"
+    }
+
     "redirect to problem uploading file if file not found in session cache" in {
       val uploadResponse = UploadResponse("404", Some(""))
       val rasSession     =
@@ -340,6 +352,58 @@ class UpscanControllerSpec extends AnyWordSpec with RasTestHelper {
       val result                  = TestUpscanController.uploadInProgress.apply(fakeRequest)
       status(result)         shouldBe SEE_OTHER
       redirectLocation(result) should include("file-ready")
+    }
+
+    "return Ok with cannot-upload-another-file view when file session exists but no results file" in {
+      when(mockFilesSessionService.fetchFileSession(any())(any(), any()))
+        .thenReturn(Future.successful(Some(fileSession.copy(resultsFile = None))))
+      val result = TestUpscanController.uploadInProgress.apply(fakeRequest)
+      status(result) shouldBe OK
+    }
+  }
+
+  "uploadSuccess when ras session cannot be retrieved" must {
+    "redirect to global error page" in {
+      when(mockRasSessionCacheService.fetchRasSession()(any())).thenReturn(Future.successful(None))
+      val result = TestUpscanController.uploadSuccess.apply(fakeRequest)
+      status(result)         shouldBe SEE_OTHER
+      redirectLocation(result) should include("global-error")
+    }
+  }
+
+  "UpscanController unauthenticated" must {
+    def stubUnauth(): Unit =
+      when(mockAuthConnector.authorise[Enrolments](any(), any())(any(), any()))
+        .thenReturn(Future.failed(SessionRecordNotFound("no session")))
+
+    "redirect get to GG sign-in" in {
+      stubUnauth()
+      val result = TestUpscanController.get.apply(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect back to GG sign-in" in {
+      stubUnauth()
+      val result = TestUpscanController.back.apply(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect uploadSuccess to GG sign-in" in {
+      stubUnauth()
+      val result = TestUpscanController.uploadSuccess.apply(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect uploadError to GG sign-in" in {
+      stubUnauth()
+      val result = TestUpscanController.uploadError.apply(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
+    }
+
+    "redirect uploadInProgress to GG sign-in" in {
+      stubUnauth()
+      val result = TestUpscanController.uploadInProgress.apply(fakeRequest)
+      redirectLocation(result) should include("gg/sign-in")
     }
   }
 

@@ -27,7 +27,7 @@ trait NinoValidator {
   def containsNoSpecialCharacters(nino: String): Boolean =
     nino.replaceAll("\\s", "").toUpperCase.matches(specialCharacterRegex)
 
-  def ninoConstraint(name: String): Constraint[String] = Constraint("nino") { text =>
+  def ninoConstraint(name: String): Constraint[String] = Constraint(name) { text =>
     val ninoText = text.replaceAll("\\s", "")
     if (ninoText.isEmpty)
       Invalid(Seq(ValidationError("error.withName.mandatory", "National Insurance number")))

@@ -15,13 +15,10 @@
  *@
 
 @import config.ApplicationConfig
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.hmrcstandardpage.{HmrcStandardPageParams, ServiceURLs, TemplateOverrides}
 
 @this(
-    govukLayout: GovukLayout,
-    hmrcHead: HmrcHead,
-    hmrcStandardHeader: HmrcStandardHeader,
-    hmrcStandardFooter: HmrcStandardFooter,
-    hmrcScripts: HmrcScripts,
+    hmrcStandardPage: HmrcStandardPage,
     hmrcReportTechnicalIssueHelper: HmrcReportTechnicalIssueHelper,
     hmrcTimeoutDialogHelper: HmrcTimeoutDialogHelper
 )
@@ -29,8 +26,6 @@
 @(pageTitle: String, beforeContentHtml: Option[Html] = None, scriptElem: Option[Html] = None, turnOnSignOutDialogHelper: Boolean = true)(contentBlock: Html)(implicit request: RequestHeader, messages: Messages, appConfig: ApplicationConfig)
 
 @head = {
-    <meta name="format-detection" content="telephone=no" />
-    <link rel="stylesheet" href='@controllers.routes.Assets.versioned("stylesheets/ras.css")'/>
     @if(turnOnSignOutDialogHelper){
         @hmrcTimeoutDialogHelper(
             signOutUrl = appConfig.timedOutUrl,
@@ -51,15 +46,16 @@
     </div>
 }
 
-@govukLayout(
+@hmrcStandardPage(HmrcStandardPageParams(
     pageTitle = Some(pageTitle),
-    headBlock = Some(hmrcHead(Some(head))),
-    headerBlock = Some(hmrcStandardHeader(
-        serviceName = Some(messages("service.name")),
+    serviceName = Some(messages("service.name")),
+    serviceURLs = ServiceURLs(
         serviceUrl = Some(controllers.routes.ChooseAnOptionController.get.url),
         signOutUrl = Some(controllers.routes.LogoutController.logout.url)
-    )),
-    beforeContentBlock = beforeContentHtml,
-    scriptsBlock = Some(hmrcScripts(scriptElem)),
-    footerBlock = Some(hmrcStandardFooter())
-)(content)
+    ),
+    templateOverrides = TemplateOverrides(
+        additionalHeadBlock = Some(head),
+        beforeContentBlock = beforeContentHtml
+    )
+))(content)
+

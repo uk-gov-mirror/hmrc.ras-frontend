@@ -55,7 +55,8 @@
     ),
     templateOverrides = TemplateOverrides(
         additionalHeadBlock = Some(head),
-        beforeContentBlock = beforeContentHtml
+        beforeContentBlock = beforeContentHtml,
+        additionalScriptsBlock = scriptElem
     )
 ))(content)
 

@@ -74,7 +74,7 @@ class ApplicationConfig @Inject() (config: ServicesConfig) {
   lazy val maxFileSize: Int               = config.getInt("upscan.maxFileSize")
 
   lazy val feedbackBaseUrl: String = config.getString("feedback-link-base")
-  val feedbackUrl: String          = s"$feedbackBaseUrl/feedback/ras"
+  val feedbackUrl: String          = s"$feedbackBaseUrl/feedback/ras?useServiceNavigation"
 
   lazy val userSessionsTTL: Duration = config.getDuration("mongodb.userSessionsCacheTTLHours")
 }

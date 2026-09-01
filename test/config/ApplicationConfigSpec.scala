@@ -94,7 +94,7 @@ class ApplicationConfigSpec extends AnyWordSpec with Matchers with RasTestHelper
 
     "expose feedback URL" in {
       config.feedbackBaseUrl shouldBe "http://localhost:9514"
-      config.feedbackUrl     shouldBe "http://localhost:9514/feedback/ras"
+      config.feedbackUrl     shouldBe "http://localhost:9514/feedback/ras?useServiceNavigation"
     }
 
     "expose user-sessions TTL" in {

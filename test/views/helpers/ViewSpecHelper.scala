@@ -32,7 +32,7 @@ class ViewSpecHelper extends AnyWordSpec with RasTestHelper {
     assert(
       body
         .getElementById("feedback-link")
-        .html() == """<a href="http://localhost:9514/feedback/ras" class="govuk-link">What did you think of this service?</a> (takes 30 seconds)""",
+        .html() == """<a href="http://localhost:9514/feedback/ras?useServiceNavigation" class="govuk-link">What did you think of this service?</a> (takes 30 seconds)""",
       "the feedback link was not found or was invalid"
     )
   }

@@ -122,7 +122,7 @@ trait RasTestHelper extends MongoSupport with MockitoSugar with WireMockSupport 
   when(mockAppConfig.rasFrontendUrlSuffix).thenReturn("relief-at-source")
   when(mockAppConfig.loginCallback).thenReturn("/relief-at-source/")
   when(mockAppConfig.loginURL).thenReturn("http://localhost:9025/gg/sign-in")
-  when(mockAppConfig.feedbackUrl).thenReturn("http://localhost:9514/feedback/ras")
+  when(mockAppConfig.feedbackUrl).thenReturn("http://localhost:9514/feedback/ras?useServiceNavigation")
 
   when(mockAppConfig.rasApiBaseUrl).thenReturn(wireMockUrl)
   when(mockAppConfig.rasApiResidencyStatusEndpoint).thenReturn("residency-status")
@@ -134,12 +134,14 @@ trait RasTestHelper extends MongoSupport with MockitoSugar with WireMockSupport 
     fakeApplication.injector.instanceOf[cannot_upload_another_file]
 
   val chooseAnOptionView: choose_an_option             = fakeApplication.injector.instanceOf[choose_an_option]
+  val errorView: error                                 = fakeApplication.injector.instanceOf[error]
   val fileNotAvailableView: file_not_available         = fakeApplication.injector.instanceOf[file_not_available]
   val fileReadyView: file_ready                        = fakeApplication.injector.instanceOf[file_ready]
   val fileUploadView: file_upload                      = fakeApplication.injector.instanceOf[file_upload]
   val fileUploadSuccessfulView: file_upload_successful = fakeApplication.injector.instanceOf[file_upload_successful]
   val globalErrorView: global_error                    = fakeApplication.injector.instanceOf[global_error]
   val globalPageNotFoundView: global_page_not_found    = fakeApplication.injector.instanceOf[global_page_not_found]
+  val govukWrapperView: govuk_wrapper                  = fakeApplication.injector.instanceOf[govuk_wrapper]
   val matchFoundView: match_found                      = fakeApplication.injector.instanceOf[match_found]
   val matchNotFoundView: match_not_found               = fakeApplication.injector.instanceOf[match_not_found]
   val memberDobView: member_dob                        = fakeApplication.injector.instanceOf[member_dob]

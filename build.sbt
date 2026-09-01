@@ -2,7 +2,7 @@ import sbt.*
 import sbt.Keys.*
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
 
-ThisBuild / scalaVersion := "3.3.7"
+ThisBuild / scalaVersion := "3.3.8"
 ThisBuild / majorVersion := 1
 
 lazy val microservice = Project("ras-frontend", file("."))

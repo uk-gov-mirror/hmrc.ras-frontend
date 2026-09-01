@@ -32,9 +32,8 @@
  <li>
      @messages("global.error.list.second") <a
        lang="en" hreflang="en" class="govuk-link hmrc-report-technical-issue" target="_blank"
-       href='@contactFrontendConfig.baseUrl/contact/report-technical-problem?newTab=true&amp;service=RAS@if(contactFrontendConfig.referrerUrl.nonEmpty) {&amp;referrerUrl=@urlEncode(contactFrontendConfig.referrerUrl.get)}'>
+       href='@contactFrontendConfig.baseUrl/contact/report-technical-problem?newTab=true&amp;service=RAS@if(contactFrontendConfig.referrerUrl.nonEmpty) {&amp;referrerUrl=@urlEncode(contactFrontendConfig.referrerUrl.get)}&amp;useServiceNavigation'>
        @messages("global.error.list.second.hyperlink")</a>
  </li>
- </a>
 </ul>
 }
